@@ -3,30 +3,42 @@ import qualified Data.Map.Lazy as M
 import Data.Char (toLower)
 import Data.List (minimumBy, maximumBy)
 
+data Entry = Entry {
+  entryValue :: Integer,
+  entryError :: Integer
+  }
+  deriving (Show)
+
+instance Ord Entry where
+  e1 `compare` e2 = entryValue e1 `compare` entryValue e2
+
+instance Eq Entry where
+  e1 == e2 = entryValue e1 == entryValue e2
+
 spaceSaving :: (Ord a) 
             => Int              
             -> [a]              
-            -> M.Map a Integer  
+            -> M.Map a Entry
 
 spaceSaving k = spaceSave M.empty 
   where
     spaceSave m [] = m
     spaceSave m (s:ss) 
-      | M.member s m = update $ M.adjust (+ 1) s m
-      | M.size m < k = update $ M.insert s 1 m
+      | M.member s m = update $ M.adjust (\e -> e {entryValue = entryValue e + 1}) s m
+      | M.size m < k = update $ M.insert s (Entry 1 0) m
       | otherwise    = update $ updateLowestKey m s
      where
       update f = spaceSave f ss
 
 
 updateLowestKey :: (Ord k) 
-                 => M.Map k Integer -- Input map
-                 -> k               -- Input value
-                 -> M.Map k Integer -- Updated map 
+                 => M.Map k Entry -- Input map
+                 -> k             -- Input value
+                 -> M.Map k Entry -- Updated map
 
-updateLowestKey m s = M.insert s (lowestValue + 1) lowestKeyRemoved
+updateLowestKey m s = M.insert s (Entry (lowestValue + 1) lowestValue) lowestKeyRemoved
   where
-    (lowestKey, lowestValue) = head . M.toList . minimum' $ m
+    (lowestKey, Entry lowestValue _) = head . M.toList . minimum' $ m
     lowestKeyRemoved = M.delete lowestKey m
    
 minimum' :: (Ord a) => M.Map k a -> M.Map k a
